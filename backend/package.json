@@ -1,0 +1,25 @@
+{
+  "name": "gota-backend",
+  "version": "1.0.0",
+  "description": "API do Gota - gestão residencial de água (UPX 7 / ODS 6)",
+  "type": "module",
+  "main": "src/servidor.js",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "dev": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning --watch src/servidor.js",
+    "start": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning src/servidor.js",
+    "carga-inicial": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning scripts/carga-inicial.js",
+    "simulador": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning scripts/simulador.js",
+    "test": "node --disable-warning=ExperimentalWarning --test \"test/**/*.test.js\""
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "ws": "^8.18.0",
+    "zod": "^3.25.0"
+  }
+}

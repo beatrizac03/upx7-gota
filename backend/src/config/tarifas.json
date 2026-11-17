@@ -1,0 +1,32 @@
+{
+  "fonte": "Valores de referência inspirados na estrutura tarifária da Copasa (tarifa fixa + faixas progressivas por m³). ATUALIZE com a resolução ARSAE-MG vigente antes de usar em produção.",
+  "vigencia": "2026-01-01",
+  "categorias": {
+    "residencial": {
+      "nome": "Residencial",
+      "tarifaFixaAgua": 10.5,
+      "percentualEsgoto": 0.8,
+      "faixas": [
+        { "ateM3": 5, "valorM3": 2.5 },
+        { "ateM3": 10, "valorM3": 3.6 },
+        { "ateM3": 15, "valorM3": 6.0 },
+        { "ateM3": 20, "valorM3": 6.7 },
+        { "ateM3": 40, "valorM3": 7.5 },
+        { "ateM3": null, "valorM3": 13.5 }
+      ]
+    },
+    "social": {
+      "nome": "Residencial Social",
+      "tarifaFixaAgua": 5.25,
+      "percentualEsgoto": 0.8,
+      "faixas": [
+        { "ateM3": 5, "valorM3": 1.25 },
+        { "ateM3": 10, "valorM3": 1.8 },
+        { "ateM3": 15, "valorM3": 4.2 },
+        { "ateM3": 20, "valorM3": 6.7 },
+        { "ateM3": 40, "valorM3": 7.5 },
+        { "ateM3": null, "valorM3": 13.5 }
+      ]
+    }
+  }
+}
