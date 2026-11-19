@@ -9,6 +9,7 @@ import { useAtualizarAoPuxar } from '../../hooks/useAtualizarAoPuxar';
 import { formatarDataHora, formatarLitros, formatarRelativo } from '../../utils/formatar';
 import { cores, espaco, raio } from '../../tema';
 import { RotuloStatus } from './RotuloStatus';
+import { PainelSimulacao } from './PainelSimulacao';
 
 const FILTRO_LEITURAS = { ordem: 'desc' };
 const ICONE_ORIGEM = { sensor: 'camera-outline', simulador: 'hardware-chip-outline', manual: 'create-outline' };
@@ -95,6 +96,8 @@ export function MeuMedidorTela({ navigation }) {
           <Botao titulo="Conectar medidor" icone="wifi" aoPressionar={() => navigation.navigate('ConectarMedidor')} />
         </Cartao>
       )}
+
+      {medidor?.tipo === 'simulado' && <PainelSimulacao />}
 
       <Botao titulo="Registrar leitura manual" variante="secundario" icone="create-outline" aoPressionar={() => navigation.navigate('RegistrarLeitura')} />
       <Text style={estilos.secao}>Leituras recentes</Text>

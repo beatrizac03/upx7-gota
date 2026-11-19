@@ -21,7 +21,11 @@
       }
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "output": "single",
+      "name": "Gota",
+      "themeColor": "#2F6FAE"
     },
     "plugins": [
       "expo-secure-store",

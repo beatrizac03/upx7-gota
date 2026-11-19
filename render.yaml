@@ -1,0 +1,21 @@
+# Blueprint do Render para a API do Gota (https://render.com → New → Blueprint).
+# Plano gratuito: o disco não é persistente, então a conta demo é recriada a cada
+# reinício (CARGA_INICIAL_AUTOMATICA). O serviço "dorme" sem uso e leva ~1 min para acordar.
+services:
+  - type: web
+    name: gota-api
+    runtime: node
+    rootDir: backend
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/saude
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: CARGA_INICIAL_AUTOMATICA
+        value: "true"
+      - key: JWT_SEGREDO
+        generateValue: true
+      - key: CORS_ORIGEM
+        value: "*"

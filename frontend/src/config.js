@@ -15,6 +15,12 @@ function hostPadrao() {
 }
 
 export const API_URL = (process.env.EXPO_PUBLIC_API_URL || `http://${hostPadrao()}:3333/api`).replace(/\/$/, '');
+
+// Site publicado (ex.: Vercel) precisa de EXPO_PUBLIC_API_URL apontando para a API hospedada (https).
+if (Platform.OS === 'web' && !process.env.EXPO_PUBLIC_API_URL && typeof window !== 'undefined'
+  && !/^(localhost|127\.|10\.|192\.168\.)/.test(window.location.hostname)) {
+  console.warn('[Gota] Defina EXPO_PUBLIC_API_URL no ambiente de build (ex.: Vercel). Usando', API_URL);
+}
 export const TEMPO_REAL_URL = `${API_URL.replace(/^http/, 'ws').replace(/\/api$/, '')}/tempo-real`;
 
 export const CONTA_DEMO = { email: 'demo@gota.app', senha: 'gota123' };

@@ -5,8 +5,15 @@ import { criarContainer } from './container.js';
 import { criarApp } from './app.js';
 import { iniciarTempoReal } from './tempo-real/servidorTempoReal.js';
 import { agendarVerificacaoOffline } from './tarefas/verificarDispositivosOffline.js';
+import { DEMO, executarCargaInicial } from './simulacao/cargaInicial.js';
 
 const container = criarContainer();
+
+if (ambiente.cargaInicialAutomatica) {
+  const resultado = await executarCargaInicial(container);
+  if (resultado) console.log(`[carga inicial] conta demo criada: ${resultado.leituras} leituras, ${resultado.alertas} alertas (${DEMO.email} / ${DEMO.senha})`);
+}
+
 const servidor = http.createServer(criarApp(container));
 iniciarTempoReal(servidor, container);
 const pararVerificacao = agendarVerificacaoOffline(container);
@@ -23,6 +30,7 @@ servidor.listen(ambiente.porta, () => {
 
 const encerrar = () => {
   pararVerificacao();
+  container.servicos.simulacao.pararTodas();
   servidor.close(() => {
     container.repositorios.fechar();
     process.exit(0);

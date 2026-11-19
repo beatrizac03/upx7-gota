@@ -16,7 +16,10 @@ function caminho(valor, padrao) {
 
 /** Configuração centralizada. Tudo vem de variáveis de ambiente com padrões seguros para desenvolvimento. */
 export const ambiente = Object.freeze({
-  porta: numero(process.env.PORTA, 3333),
+  // PORT é a variável usada por Render/Railway/Heroku
+  porta: numero(process.env.PORTA || process.env.PORT, 3333),
+  /** Cria a conta demo com 6 meses de dados ao iniciar, se ela ainda não existir (útil em hospedagem). */
+  cargaInicialAutomatica: process.env.CARGA_INICIAL_AUTOMATICA === 'true',
   provedorBanco: process.env.PROVEDOR_BANCO || 'sqlite',
   caminhoSqlite: caminho(process.env.CAMINHO_SQLITE, './dados/gota.db'),
   supabaseUrl: process.env.SUPABASE_URL || '',

@@ -1,9 +1,9 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useAtualizarAoPuxar } from '../../hooks/useAtualizarAoPuxar';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import {
-  BarraProgresso, Botao, Carregando, Cartao, EstadoErro, EstadoVazio, Etiqueta, GotaLogo, GraficoBarras, IconeSuave, Tela,
+  BarraProgresso, Botao, ExplicacaoConta, Carregando, Cartao, EstadoErro, EstadoVazio, Etiqueta, GotaLogo, GraficoBarras, IconeSuave, Tela,
 } from '../../componentes';
 import { useHistorico, useResumo } from '../../consultas';
 import { useSessao } from '../../contexto/SessaoContexto';
@@ -15,7 +15,8 @@ import { RotuloStatus } from '../medidor/RotuloStatus';
 const CONSULTA_HOJE = { agrupamento: 'hora' };
 
 export function InicioTela({ navigation }) {
-  const { usuario } = useSessao();
+  const { usuario, residencia } = useSessao();
+  const [explicacaoAberta, setExplicacaoAberta] = useState(false);
   const { conectado } = useTempoReal();
   const resumo = useResumo();
   const horas = useHistorico(CONSULTA_HOJE);
@@ -124,12 +125,12 @@ export function InicioTela({ navigation }) {
         )}
       </Cartao>
 
-      <Cartao titulo="Estimativa da conta">
+      <Cartao titulo={`Estimativa da conta de ${r.mes.nome}`}>
         <View style={estilos.linha}>
           <IconeSuave nome="receipt-outline" tamanho={72} redondo />
           <View style={estilos.flex}>
             <Text style={estilos.numeroGrande}>{formatarReais(r.conta.estimadaMes)}</Text>
-            <Text style={estilos.texto}>{r.conta.descricao} · projeção do mês</Text>
+            <Text style={estilos.texto}>por mês · {r.conta.descricao}</Text>
           </View>
         </View>
         {diferencaConta !== null && Math.abs(diferencaConta) >= 0.01 && (
@@ -138,7 +139,18 @@ export function InicioTela({ navigation }) {
             <Text style={[estilos.texto, estilos.flex]}>a {diferencaConta < 0 ? 'menos' : 'mais'} que no mês anterior</Text>
           </View>
         )}
+        <Pressable onPress={() => setExplicacaoAberta(true)} hitSlop={8} accessibilityRole="button" style={estilos.comoCalculamos}>
+          <Ionicons name="information-circle-outline" size={18} color={cores.primariaTexto} />
+          <Text style={estilos.textoComoCalculamos}>Como calculamos?</Text>
+        </Pressable>
       </Cartao>
+      <ExplicacaoConta
+        visivel={explicacaoAberta}
+        aoFechar={() => setExplicacaoAberta(false)}
+        litros={r.mes.projecaoLitros}
+        categoria={residencia?.categoriaTarifaria}
+        origemConsumo={`Consumo do mês projetado: média de ${formatarLitros(r.mes.mediaDiariaLitros)} por dia (dias já completos de ${r.mes.nome}) × dias do mês. Até agora foram ${formatarLitros(r.mes.consumoLitros)}.`}
+      />
 
       <Cartao titulo="Consumo por pessoa" aoPressionar={() => navigation.navigate('Perspectiva')}>
         <View style={estilos.linha}>
@@ -188,6 +200,8 @@ const estilos = StyleSheet.create({
   unidade: { fontSize: 24, color: cores.texto },
   texto: { fontSize: 15, color: cores.textoSecundario, lineHeight: 21 },
   legenda: { fontSize: 13, color: cores.textoSecundario },
+  comoCalculamos: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start' },
+  textoComoCalculamos: { fontSize: 14, fontWeight: '600', color: cores.primariaTexto },
   statusMeta: { fontSize: 14, fontWeight: '600', color: cores.textoSecundario },
   botaoVazio: { alignSelf: 'stretch', marginTop: espaco.md },
 });

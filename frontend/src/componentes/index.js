@@ -17,3 +17,4 @@ export { FolhaInferior, ModalOpcoes } from './ModalOpcoes';
 export { CartaoAlerta, VISUAL_ALERTA } from './CartaoAlerta';
 export { CartaoCampo, AvisoInfo } from './CartaoCampo';
 export { Passos } from './Passos';
+export { ExplicacaoConta } from './ExplicacaoConta';

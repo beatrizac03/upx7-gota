@@ -39,10 +39,14 @@ Na tela de login há o botão **"Usar conta de demonstração"**.
 
 ### 3. Simulador do leitor
 
+**Pelo app (sem terminal):** aba **Medidor** → cartão **Simulação do leitor** → escolha o cenário e a velocidade → **Ligar simulação**. A simulação roda no servidor, passa pelo mesmo serviço de ingestão do hardware e desliga sozinha após 30 minutos. Velocidade *Normal* = 15 min simulados a cada 5 s; *Rápida* = 1 h simulada a cada 2 s.
+
+**Pelo terminal (opcional, testa o caminho HTTP do hardware):**
+
 ```bash
 cd backend
-npm run simulador                                   # cenário normal, 1 hora simulada a cada 2 s
-npm run simulador -- --cenario=vazamento --intervalo=1
+npm run simulador                                   # 15 min simulados a cada 5 s
+npm run simulador -- --cenario=vazamento --passo=60 --intervalo=2
 ```
 
 Durante a execução dá para trocar de cenário pelo teclado: **[n]** normal · **[p]** pico · **[v]** vazamento · **[o]** offline · **[q]** sair.
@@ -64,6 +68,25 @@ Durante a execução dá para trocar de cenário pelo teclado: **[n]** normal ·
 5. Para mostrar o alerta de **medidor offline**, rode a API com `LIMITE_OFFLINE_MINUTOS=1` no `.env` e aperte **[o]** no simulador. Ao voltar com **[n]**, as leituras guardadas são enviadas em lote.
 
 > O tempo do simulador é acelerado, então o "hoje" do app é o dia da **última leitura recebida**. Assim o gráfico do dia acompanha o relógio simulado.
+
+### Para quem vai só testar (sem terminal)
+
+1. Abra o link do site (Vercel) ou o app.
+2. Toque em **Já tenho conta** → **Usar conta de demonstração**.
+3. Aba **Medidor** → **Simulação do leitor** → escolha **Vazamento** e **Rápida** → **Ligar simulação**.
+4. Volte ao **Início**: o consumo de hoje sobe sozinho e, quando o relógio simulado passa das 5h, aparece o alerta de vazamento.
+
+## Como a conta (R$) é estimada
+
+- É sempre um valor **mensal** (água + esgoto). No mês em andamento é uma **projeção**: média diária dos dias completos × dias do mês. Meses fechados usam o consumo medido.
+- Cálculo (em `backend/src/servicos/tarifa.servico.js`): **tarifa fixa de água + m³ de cada faixa × preço da faixa** (tarifa progressiva) e **esgoto = 80% do valor da água**.
+- Os valores ficam em `backend/src/config/tarifas.json`. São **valores de referência** com a estrutura da Copasa (tarifa fixa + faixas), **não a tabela oficial**. Antes de apresentar valores em R$ como reais, atualize com a resolução ARSAE-MG vigente.
+- No app, o link **"Como calculamos?"** (Início e Histórico) mostra a conta do mês faixa por faixa.
+
+## Hospedagem
+
+- **Site (Vercel):** projeto com *Root Directory* = `frontend` (usa `frontend/vercel.json`) e a variável `EXPO_PUBLIC_API_URL` = URL pública da API terminando em `/api`.
+- **API (Render):** *New → Blueprint* apontando para este repositório (usa `render.yaml`). Com `CARGA_INICIAL_AUTOMATICA=true`, a conta demo e os 6 meses de dados são criados sozinhos quando o banco está vazio. No plano gratuito o disco não é persistente (a conta demo volta ao estado inicial quando o serviço reinicia) e o serviço "dorme" sem uso: o primeiro acesso pode levar ~1 minuto.
 
 ## Arquitetura do backend
 
@@ -124,6 +147,10 @@ Respostas de erro seguem sempre o formato `{ "erro": { "codigo", "mensagem", "de
 | GET | `/alertas?pagina&limite&tipo&lido` | Alertas (paginado e filtrável) + total de não lidos |
 | PATCH | `/alertas/:id` | `{ lido: true }` |
 | POST | `/alertas/marcar-todos-lidos` | Marca todos como lidos |
+| GET | `/simulacao` | Estado da simulação (ligada, cenário, relógio simulado) |
+| POST | `/simulacao/iniciar` | `{ cenario: normal\|pico\|vazamento\|offline, velocidade: normal\|rapida }` |
+| PATCH | `/simulacao` | Troca cenário e/ou velocidade com a simulação ligada |
+| POST | `/simulacao/parar` | Desliga (e envia as leituras guardadas sem Wi-Fi) |
 | GET | `/dicas?categoria=personalizadas\|todas` | Dicas calculadas a partir do consumo real |
 | GET | `/tarifas` · `/tarifas/estimativa?litros=12000` | Tabela tarifária e cálculo da conta |
 

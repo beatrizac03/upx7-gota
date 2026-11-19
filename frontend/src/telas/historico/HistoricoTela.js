@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
-import { useAtualizarAoPuxar } from '../../hooks/useAtualizarAoPuxar';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Cabecalho, Carregando, Cartao, EstadoErro, GraficoBarras, IconeSuave, OpcoesSegmentadas, Tela } from '../../componentes';
+import { useAtualizarAoPuxar } from '../../hooks/useAtualizarAoPuxar';
+import { useSessao } from '../../contexto/SessaoContexto';
+import { Cabecalho, Carregando, Cartao, EstadoErro, ExplicacaoConta, GraficoBarras, IconeSuave, OpcoesSegmentadas, Tela } from '../../componentes';
 import { useHistorico } from '../../consultas';
 import { formatarLitros, formatarNumero, formatarReais } from '../../utils/formatar';
 import { cores, espaco } from '../../tema';
@@ -21,6 +22,8 @@ const eixoReais = (v) => `R$ ${formatarNumero(v)}`;
 export function HistoricoTela() {
   const [modo, setModo] = useState('consumo');
   const [selecionado, setSelecionado] = useState(null);
+  const [explicacaoAberta, setExplicacaoAberta] = useState(false);
+  const { residencia } = useSessao();
   const meses = useHistorico(CONSULTA_MESES);
   const dias = useHistorico(CONSULTA_DIAS);
 
@@ -83,7 +86,7 @@ export function HistoricoTela() {
             <View style={estilos.flex}>
               <Text style={estilos.tituloCartao}>Conta estimada {mes.emAndamento ? 'do mês' : `de ${mes.nome}`}</Text>
               <Text style={estilos.valorConta}>{formatarReais(mes.custoEstimado)}</Text>
-              <Text style={estilos.legenda}>Média de {formatarLitros(mes.mediaDiariaLitros)} por dia</Text>
+              <Text style={estilos.legenda}>Valor mensal · média de {formatarLitros(mes.mediaDiariaLitros)} por dia</Text>
             </View>
             <IconeSuave nome="stats-chart" tamanho={72} />
           </View>
@@ -98,6 +101,19 @@ export function HistoricoTela() {
               </View>
             </View>
           )}
+          <Pressable onPress={() => setExplicacaoAberta(true)} hitSlop={8} accessibilityRole="button" style={estilos.comoCalculamos}>
+            <Ionicons name="information-circle-outline" size={18} color={cores.primariaTexto} />
+            <Text style={estilos.textoComoCalculamos}>Como calculamos?</Text>
+          </Pressable>
+          <ExplicacaoConta
+            visivel={explicacaoAberta}
+            aoFechar={() => setExplicacaoAberta(false)}
+            litros={mes.projecaoLitros}
+            categoria={residencia?.categoriaTarifaria}
+            origemConsumo={mes.emAndamento
+              ? `${mes.nome} ainda não acabou: usamos a média de ${formatarLitros(mes.mediaDiariaLitros)} por dia × dias do mês.`
+              : `Consumo medido em ${mes.nome}.`}
+          />
         </Cartao>
       )}
 
@@ -133,4 +149,6 @@ const estilos = StyleSheet.create({
   seta: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
   diferenca: { fontSize: 22, fontWeight: '700' },
   legenda: { fontSize: 15, color: cores.textoSecundario },
+  comoCalculamos: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start' },
+  textoComoCalculamos: { fontSize: 14, fontWeight: '600', color: cores.primariaTexto },
 });

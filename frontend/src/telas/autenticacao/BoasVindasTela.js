@@ -27,7 +27,11 @@ export function BoasVindasTela({ navigation }) {
   const [indice, setIndice] = useState(0);
   const lista = useRef(null);
 
-  const aoRolar = useCallback((e) => setIndice(Math.round(e.nativeEvent.contentOffset.x / width)), [width]);
+  // onScroll funciona no celular e no navegador (onMomentumScrollEnd não dispara na web)
+  const aoRolar = useCallback((e) => {
+    const atual = Math.round(e.nativeEvent.contentOffset.x / width);
+    setIndice((anterior) => (anterior === atual ? anterior : atual));
+  }, [width]);
 
   const renderizar = useCallback(({ item }) => (
     <View style={[estilos.slide, { width }]}>
@@ -48,8 +52,11 @@ export function BoasVindasTela({ navigation }) {
   ), [width]);
 
   const avancar = () => {
-    if (indice < SLIDES.length - 1) lista.current?.scrollToIndex({ index: indice + 1 });
-    else navigation.navigate('Cadastro');
+    if (indice >= SLIDES.length - 1) return navigation.navigate('Cadastro');
+    const proximo = indice + 1;
+    // Atualiza o índice já no clique: não depende do evento de rolagem chegar
+    setIndice(proximo);
+    lista.current?.scrollToOffset({ offset: proximo * width, animated: true });
   };
 
   return (
@@ -63,7 +70,8 @@ export function BoasVindasTela({ navigation }) {
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
-        onMomentumScrollEnd={aoRolar}
+        onScroll={aoRolar}
+        scrollEventThrottle={32}
         getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
       />
       <View style={estilos.pontos} accessibilityLabel={`Página ${indice + 1} de ${SLIDES.length}`}>

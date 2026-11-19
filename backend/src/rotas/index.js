@@ -21,6 +21,8 @@ import { criarLeituraControlador } from '../controladores/leitura.controlador.js
 import { criarIngestaoControlador } from '../controladores/ingestao.controlador.js';
 import { criarAlertaControlador } from '../controladores/alerta.controlador.js';
 import { criarConsumoControlador } from '../controladores/consumo.controlador.js';
+import { criarSimulacaoControlador } from '../controladores/simulacao.controlador.js';
+import { alterarSimulacaoDto, iniciarSimulacaoDto } from '../dtos/simulacao.dto.js';
 
 /** Todas as rotas da API, agrupadas por recurso. Documentação: backend/README.md */
 export function criarRotas(servicos) {
@@ -35,6 +37,7 @@ export function criarRotas(servicos) {
   const ingestao = criarIngestaoControlador(servicos);
   const alerta = criarAlertaControlador(servicos);
   const consumo = criarConsumoControlador(servicos);
+  const simulacao = criarSimulacaoControlador(servicos);
 
   rotas.get('/saude', (_req, res) => res.json({ status: 'ok', servico: 'gota-api', em: new Date().toISOString() }));
 
@@ -76,6 +79,12 @@ export function criarRotas(servicos) {
   rotas.get('/alertas', ...comResidencia, validar({ consulta: listarAlertasDto }), alerta.listar);
   rotas.patch('/alertas/:id', ...comResidencia, validar({ parametros: idParametroDto, corpo: marcarAlertaDto }), alerta.marcarLido);
   rotas.post('/alertas/marcar-todos-lidos', ...comResidencia, alerta.marcarTodosLidos);
+
+  // Simulação do leitor controlada pelo app (demonstração sem terminal)
+  rotas.get('/simulacao', ...comResidencia, simulacao.estado);
+  rotas.post('/simulacao/iniciar', ...comResidencia, validar({ corpo: iniciarSimulacaoDto }), simulacao.iniciar);
+  rotas.patch('/simulacao', ...comResidencia, validar({ corpo: alterarSimulacaoDto }), simulacao.alterar);
+  rotas.post('/simulacao/parar', ...comResidencia, simulacao.parar);
 
   // Dicas e tarifas
   rotas.get('/dicas', ...comResidencia, validar({ consulta: dicasDto }), consumo.dicas);

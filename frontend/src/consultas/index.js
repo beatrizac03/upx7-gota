@@ -1,5 +1,5 @@
 import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { alertaApi, consumoApi, dicaApi, dispositivoApi, leituraApi, residenciaApi } from '../api/endpoints';
+import { alertaApi, consumoApi, dicaApi, dispositivoApi, leituraApi, residenciaApi, simulacaoApi, tarifaApi } from '../api/endpoints';
 import { useSessao } from '../contexto/SessaoContexto';
 
 /**
@@ -16,6 +16,8 @@ export const chaves = {
   dicas: (categoria) => ['dicas', categoria],
   dispositivos: ['dispositivos'],
   leituras: (filtros) => ['leituras', filtros],
+  simulacao: ['simulacao'],
+  estimativaConta: (litros, categoria) => ['tarifas', 'estimativa', Math.round(litros), categoria],
 };
 
 const proximaPagina = (ultima) => (ultima.paginacao.temProxima ? ultima.paginacao.pagina + 1 : undefined);
@@ -128,3 +130,39 @@ export function useRemoverDispositivo() {
     },
   });
 }
+
+/** Cálculo detalhado da conta (faixas, esgoto, total) para a explicação "Como calculamos?". */
+export const useEstimativaConta = (litros, categoria, ativo = true) =>
+  useQuery({
+    queryKey: chaves.estimativaConta(litros, categoria),
+    queryFn: () => tarifaApi.estimativa(litros, categoria),
+    enabled: ativo && litros !== null && litros !== undefined,
+    staleTime: Infinity,
+  });
+
+/* ---------- Simulação controlada pelo app ---------- */
+
+/** Enquanto a simulação está ligada, atualiza o relógio simulado a cada 5 s. */
+export const useSimulacao = (ativo = true) =>
+  useQuery({
+    queryKey: chaves.simulacao,
+    queryFn: simulacaoApi.estado,
+    enabled: ativo,
+    refetchInterval: (consulta) => (consulta.state.data?.ativa ? 5000 : false),
+  });
+
+function useMutacaoSimulacao(mutationFn) {
+  const cliente = useQueryClient();
+  return useMutation({
+    mutationFn,
+    onSuccess: (estado) => {
+      cliente.setQueryData(chaves.simulacao, estado);
+      cliente.invalidateQueries({ queryKey: chaves.consumo });
+      cliente.invalidateQueries({ queryKey: ['leituras'] });
+    },
+  });
+}
+
+export const useIniciarSimulacao = () => useMutacaoSimulacao(simulacaoApi.iniciar);
+export const useAlterarSimulacao = () => useMutacaoSimulacao(simulacaoApi.alterar);
+export const usePararSimulacao = () => useMutacaoSimulacao(simulacaoApi.parar);

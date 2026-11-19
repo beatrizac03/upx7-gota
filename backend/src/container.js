@@ -11,6 +11,7 @@ import { IngestaoServico } from './servicos/ingestao.servico.js';
 import { AlertaServico } from './servicos/alerta.servico.js';
 import { ConsumoServico } from './servicos/consumo.servico.js';
 import { DicaServico } from './servicos/dica.servico.js';
+import { SimulacaoServico } from './servicos/simulacao.servico.js';
 
 /**
  * Raiz de composição: monta repositórios e serviços com injeção de dependências.
@@ -26,13 +27,15 @@ export function criarContainer(opcoes = {}) {
   const dispositivoServico = new DispositivoServico({ repositorios, barramento });
   const regrasAlerta = new RegrasAlertaServico({ repositorios, calculadora, tarifaServico, barramento });
   const leituraServico = new LeituraServico({ repositorios, regrasAlerta, barramento });
+  const ingestaoServico = new IngestaoServico({ repositorios, leituraServico, dispositivoServico });
 
   const servicos = {
     autenticacao: new AutenticacaoServico({ repositorios }),
     residencia: residenciaServico,
     dispositivo: dispositivoServico,
     leitura: leituraServico,
-    ingestao: new IngestaoServico({ repositorios, leituraServico, dispositivoServico }),
+    ingestao: ingestaoServico,
+    simulacao: new SimulacaoServico({ repositorios, ingestaoServico, regrasAlerta }),
     alerta: new AlertaServico({ repositorios }),
     regrasAlerta,
     consumo: new ConsumoServico({ repositorios, calculadora, tarifaServico, residenciaServico }),

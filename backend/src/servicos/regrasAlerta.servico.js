@@ -129,20 +129,27 @@ export class RegrasAlertaServico {
     const criados = [];
 
     for (const dispositivo of dispositivos) {
-      const bateria = dispositivo.bateria !== null ? ` e a bateria (${dispositivo.bateria}%)` : '';
-      const alerta = await this.#criar(dispositivo.residenciaId, {
-        tipo: 'dispositivo_offline',
-        referencia: `${dispositivo.id}@${dispositivo.ultimoContato}`,
-        titulo: 'Medidor sem sinal',
-        mensagem: `O ${dispositivo.nome} não envia leituras desde ${formatarDataHora(dispositivo.ultimoContato)}. Verifique o Wi-Fi${bateria}.`,
-        criadoEm: agora.toISOString(),
-      });
-      if (alerta) {
-        this.barramento.emit(EVENTOS.ALERTA_CRIADO, { residenciaId: dispositivo.residenciaId, alerta });
-        criados.push(alerta);
-      }
+      const alerta = await this.alertarDispositivoOffline(dispositivo, { ultimoContato: dispositivo.ultimoContato, agora: agora.toISOString() });
+      if (alerta) criados.push(alerta);
     }
     return criados;
+  }
+
+  /**
+   * Cria (uma vez por episódio) o alerta de medidor sem sinal e avisa o app.
+   * Também usado pela simulação do app, que mede o "sem sinal" no tempo simulado.
+   */
+  async alertarDispositivoOffline(dispositivo, { ultimoContato, agora }) {
+    const bateria = dispositivo.bateria !== null && dispositivo.bateria !== undefined ? ` e a bateria (${dispositivo.bateria}%)` : '';
+    const alerta = await this.#criar(dispositivo.residenciaId, {
+      tipo: 'dispositivo_offline',
+      referencia: `${dispositivo.id}@${ultimoContato}`,
+      titulo: 'Medidor sem sinal',
+      mensagem: `O ${dispositivo.nome} não envia leituras desde ${formatarDataHora(ultimoContato)}. Verifique o Wi-Fi${bateria}.`,
+      criadoEm: agora,
+    });
+    if (alerta) this.barramento.emit(EVENTOS.ALERTA_CRIADO, { residenciaId: dispositivo.residenciaId, alerta });
+    return alerta;
   }
 
   #criar(residenciaId, dados) {

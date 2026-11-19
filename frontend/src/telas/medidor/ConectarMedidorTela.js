@@ -39,6 +39,7 @@ export function ConectarMedidorTela({ navigation, route }) {
   const [tipo, setTipo] = useState('simulado');
   const [mensagem, setMensagem] = useState(0);
   const [pulando, setPulando] = useState(false);
+  const [mostrarTecnico, setMostrarTecnico] = useState(false);
   const parear = useParearDispositivo();
 
   useEffect(() => {
@@ -163,20 +164,28 @@ export function ConectarMedidorTela({ navigation, route }) {
               <Text style={[estilos.textoPasso, { textAlign: 'center' }]}>As leituras vão chegar sozinhas, algumas vezes por dia.</Text>
             </View>
           </Cartao>
-          <Cartao titulo="Dados do leitor">
-            <Text style={estilos.legenda}>Identificador</Text>
-            <Text style={estilos.codigo} selectable>{parear.data.id}</Text>
-            <Text style={estilos.legenda}>Chave secreta (aparece só agora)</Text>
-            <Text style={estilos.codigo} selectable>{parear.data.chave}</Text>
-            {parear.data.tipo === 'simulado' && (
-              <>
-                <Text style={estilos.legenda}>Para simular este leitor, rode na pasta backend:</Text>
-                <Text style={estilos.codigo} selectable>
-                  npm run simulador -- --dispositivo={parear.data.id} --chave={parear.data.chave}
-                </Text>
-              </>
-            )}
-          </Cartao>
+          {parear.data.tipo === 'simulado' && (
+            <AvisoInfo
+              icone="flask-outline"
+              texto="Este é um leitor simulado. Para ver leituras chegando, abra a aba Medidor e toque em “Ligar simulação”. Não precisa de terminal."
+            />
+          )}
+          <Pressable onPress={() => setMostrarTecnico((v) => !v)} accessibilityRole="button" style={estilos.linkTecnico}>
+            <Text style={estilos.textoLinkTecnico}>{mostrarTecnico ? 'Ocultar' : 'Mostrar'} dados técnicos do leitor</Text>
+            <Ionicons name={mostrarTecnico ? 'chevron-up' : 'chevron-down'} size={16} color={cores.textoSecundario} />
+          </Pressable>
+          {mostrarTecnico && (
+            <Cartao titulo="Dados técnicos (para o firmware)">
+              <Text style={estilos.legenda}>Identificador</Text>
+              <Text style={estilos.codigo} selectable>{parear.data.id}</Text>
+              <Text style={estilos.legenda}>Chave secreta (aparece só agora)</Text>
+              <Text style={estilos.codigo} selectable>{parear.data.chave}</Text>
+              <Text style={estilos.legenda}>Simulador pelo terminal (opcional), na pasta backend:</Text>
+              <Text style={estilos.codigo} selectable>
+                npm run simulador -- --dispositivo={parear.data.id} --chave={parear.data.chave}
+              </Text>
+            </Cartao>
+          )}
           <Botao titulo="Continuar" aoPressionar={concluir} />
         </>
       )}
@@ -202,4 +211,6 @@ const estilos = StyleSheet.create({
   legenda: { fontSize: 14, color: cores.textoSecundario },
   codigo: { fontFamily: 'monospace', fontSize: 14, color: cores.texto, backgroundColor: cores.campo, padding: espaco.md, borderRadius: raio.sm },
   erro: { color: cores.perigo, fontSize: 15 },
+  linkTecnico: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'center', paddingVertical: espaco.sm },
+  textoLinkTecnico: { fontSize: 14, color: cores.textoSecundario },
 });

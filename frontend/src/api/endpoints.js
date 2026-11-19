@@ -45,4 +45,12 @@ export const dicaApi = {
 
 export const tarifaApi = {
   tabela: () => api.get('/tarifas'),
+  estimativa: (litros, categoria) => api.get('/tarifas/estimativa', { litros: Math.round(litros), categoria }),
+};
+
+export const simulacaoApi = {
+  estado: () => api.get('/simulacao'),
+  iniciar: (dados) => api.post('/simulacao/iniciar', dados),
+  alterar: (dados) => api.patch('/simulacao', dados),
+  parar: () => api.post('/simulacao/parar'),
 };

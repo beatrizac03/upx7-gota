@@ -3,8 +3,8 @@
  * picos de manhã (banhos) e à noite, praticamente zero de madrugada.
  * Compartilhado pela carga inicial e pelo simulador.
  */
-import { ambiente } from '../src/config/ambiente.js';
-import { partesLocais } from '../src/utils/datas.js';
+import { ambiente } from '../config/ambiente.js';
+import { partesLocais } from '../utils/datas.js';
 
 const PESOS_POR_HORA = [
   0.01, 0, 0, 0, 0, 0.02, 0.09, 0.11, 0.07, 0.05, 0.04, 0.05,

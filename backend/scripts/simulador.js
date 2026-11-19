@@ -22,7 +22,7 @@ import readline from 'node:readline';
 import { parseArgs } from 'node:util';
 import { ambiente } from '../src/config/ambiente.js';
 import { paraIsoLocal, partesLocais } from '../src/utils/datas.js';
-import { CENARIOS, litrosNaHora } from './perfilConsumo.js';
+import { CENARIOS, litrosNaHora } from '../src/simulacao/perfilConsumo.js';
 
 const { values: opcoes } = parseArgs({
   options: {
