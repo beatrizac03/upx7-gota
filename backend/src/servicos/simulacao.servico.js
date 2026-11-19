@@ -1,6 +1,7 @@
 import { ambiente } from '../config/ambiente.js';
 import { CENARIOS, litrosNaHora } from '../simulacao/perfilConsumo.js';
-import { inicioDaHora, paraIsoLocal } from '../utils/datas.js';
+import { gerarHistoricoSimulado } from '../simulacao/historicoSimulado.js';
+import { adicionarDias, inicioDaHora, inicioDoDia, paraIsoLocal } from '../utils/datas.js';
 import { ErroAplicacao } from '../utils/erros.js';
 
 export const VELOCIDADES = Object.freeze({
@@ -10,6 +11,10 @@ export const VELOCIDADES = Object.freeze({
 
 /** A simulação desliga sozinha para não ficar rodando para sempre num servidor hospedado. */
 const DURACAO_MAXIMA_MS = 30 * 60 * 1000;
+
+/** Conta nova sem leituras: gera este histórico de exemplo para as telas não abrirem vazias. */
+const DIAS_HISTORICO = 90;
+const LITROS_POR_PESSOA_DIA = 100;
 
 /**
  * Simulador do leitor Gota rodando DENTRO do servidor e controlado pelo app
@@ -44,6 +49,7 @@ export class SimulacaoServico {
       relogioSimulado: sessao.relogio.toISOString(),
       leiturasEnviadas: sessao.enviadas,
       leiturasGuardadas: sessao.memoria.length,
+      historicoGerado: sessao.historicoGerado,
       encerraEm: new Date(sessao.iniciadaEm + DURACAO_MAXIMA_MS).toISOString(),
       ultimoErro: sessao.ultimoErro,
       ...opcoes,
@@ -62,9 +68,14 @@ export class SimulacaoServico {
       });
     }
 
+    const litrosDia = residencia.moradores * LITROS_POR_PESSOA_DIA;
+    const historicoGerado = await this.#gerarHistoricoSeVazio(residencia, dispositivo, litrosDia);
+
     const sessao = {
       residenciaId: residencia.id,
       dispositivo,
+      litrosDia,
+      historicoGerado,
       cenario,
       velocidade,
       bateria: dispositivo.bateria ?? 90,
@@ -107,6 +118,21 @@ export class SimulacaoServico {
     this.#sessoes.clear();
   }
 
+  /** Primeira vez de um leitor simulado: cria DIAS_HISTORICO dias de leituras de exemplo (com um vazamento e alguns picos). */
+  async #gerarHistoricoSeVazio(residencia, dispositivo, litrosDia) {
+    if (await this.repositorios.leituras.buscarUltima(residencia.id)) return false;
+    const fim = inicioDaHora(new Date());
+    const diasPico = new Set([4, 9, 15, 27, 38, 52, 66, 80]);
+    await gerarHistoricoSimulado({ repositorios: this.repositorios, ingestao: this.ingestao }, dispositivo, {
+      inicio: inicioDoDia(adicionarDias(fim, -DIAS_HISTORICO)),
+      fim,
+      litrosDia,
+      leituraInicialM3: 100,
+      cenarioDoDia: (d) => (d === 20 ? 'vazamento' : diasPico.has(d) ? 'pico' : 'normal'),
+    });
+    return true;
+  }
+
   /** Continua do último valor do hidrômetro (o mesmo que o leitor real faz ao ligar). */
   async #sincronizar(sessao) {
     const ultima = await this.repositorios.leituras.buscarUltima(sessao.residenciaId);
@@ -132,7 +158,7 @@ export class SimulacaoServico {
 
     const { passoMinutos } = VELOCIDADES[sessao.velocidade];
     sessao.relogio = new Date(sessao.relogio.getTime() + passoMinutos * 60_000);
-    const litros = litrosNaHora(sessao.relogio, { cenario: sessao.cenario, minutos: passoMinutos });
+    const litros = litrosNaHora(sessao.relogio, { cenario: sessao.cenario, minutos: passoMinutos, litrosDia: sessao.litrosDia });
     sessao.leituraM3 = Math.round((sessao.leituraM3 + litros / 1000) * 1000) / 1000;
     if (Math.random() < 0.01) sessao.bateria = Math.max(5, sessao.bateria - 1);
 

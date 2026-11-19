@@ -21,12 +21,12 @@ export function SuaResidenciaTela({ navigation }) {
     setEnviando(true);
     setErro('');
     try {
-      // A meta diária é sugerida pelo servidor a partir dos moradores (ajustável no passo 3)
+      // A meta diária é sugerida pelo servidor a partir dos moradores (ajustável no passo 2)
       const residencia = await residenciaApi.criar(dados).catch((e) => {
         if (e.codigo === 'RESIDENCIA_JA_CADASTRADA') return residenciaApi.atualizar(dados);
         throw e;
       });
-      navigation.navigate('ConectarMedidor', { cadastroInicial: true, residencia });
+      navigation.navigate('SuaMeta', { cadastroInicial: true, residencia });
     } catch (e) {
       setErro(e.message);
     } finally {

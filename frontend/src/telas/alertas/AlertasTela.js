@@ -6,6 +6,7 @@ import { useAlertas, useAtualizarResidencia, useMarcarAlertaLido, useMarcarTodos
 import { useSessao } from '../../contexto/SessaoContexto';
 import { useAtualizarAoPuxar } from '../../hooks/useAtualizarAoPuxar';
 import { cores, espaco, raio } from '../../tema';
+import { juntarPaginasSemRepetir } from '../../utils/listas';
 
 const FILTROS = [
   { chave: 'todos', rotulo: 'Todos', filtro: {} },
@@ -27,7 +28,7 @@ export function AlertasTela() {
   const atualizarResidencia = useAtualizarResidencia();
   const { atualizando, aoAtualizar } = useAtualizarAoPuxar(alertas.refetch);
 
-  const lista = useMemo(() => alertas.data?.pages.flatMap((p) => p.dados) ?? [], [alertas.data]);
+  const lista = useMemo(() => juntarPaginasSemRepetir(alertas.data?.pages), [alertas.data]);
   const naoLidos = alertas.data?.pages[0]?.naoLidos ?? 0;
 
   const aoPressionar = useCallback((alerta) => { if (!alerta.lido) marcarLido.mutate(alerta.id); }, [marcarLido]);

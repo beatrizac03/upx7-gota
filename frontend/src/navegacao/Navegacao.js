@@ -77,7 +77,7 @@ function TelaAbertura() {
 /**
  * Três fluxos, decididos pela sessão:
  * 1. sem login → boas-vindas / entrar / cadastro;
- * 2. logado sem residência → cadastro inicial (residência → medidor → meta);
+ * 2. logado sem residência → cadastro inicial (residência → meta → conectar medidor → Início);
  * 3. completo → app com abas + tempo real.
  */
 export function Navegacao() {
@@ -108,8 +108,8 @@ export function Navegacao() {
       ) : !residencia ? (
         <Pilha.Navigator screenOptions={semCabecalho}>
           <Pilha.Screen name="SuaResidencia" component={SuaResidenciaTela} />
-          <Pilha.Screen name="ConectarMedidor" component={ConectarMedidorTela} initialParams={{ cadastroInicial: true }} />
           <Pilha.Screen name="SuaMeta" component={SuaMetaTela} initialParams={{ cadastroInicial: true }} />
+          <Pilha.Screen name="ConectarMedidor" component={ConectarMedidorTela} initialParams={{ cadastroInicial: true }} />
         </Pilha.Navigator>
       ) : (
         <ProvedorTempoReal token={token}>

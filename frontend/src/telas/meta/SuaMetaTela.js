@@ -1,12 +1,14 @@
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useMutation } from '@tanstack/react-query';
 import Slider from '@react-native-community/slider';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Botao, Cabecalho, Cartao, Carregando, EstadoErro, IconeSuave, Passos, Tela } from '../../componentes';
+import { Botao, Cabecalho, Cartao, Carregando, EstadoErro, ExplicacaoConta, IconeSuave, Passos, Tela } from '../../componentes';
+import { residenciaApi } from '../../api/endpoints';
 import { useAtualizarResidencia, useSimulacaoMeta } from '../../consultas';
 import { useSessao } from '../../contexto/SessaoContexto';
 import { useValorAtrasado } from '../../hooks/useValorAtrasado';
-import { formatarNumero, formatarReais } from '../../utils/formatar';
+import { formatarLitros, formatarNumero, formatarReais } from '../../utils/formatar';
 import { cores, espaco } from '../../tema';
 
 /** Define a meta diária. Os valores em R$ vêm do servidor (mesma tarifa das outras telas). */
@@ -17,12 +19,19 @@ export function SuaMetaTela({ navigation, route }) {
   const [meta, setMeta] = useState(residencia?.metaDiariaLitros ?? 500);
   const metaConsulta = useValorAtrasado(meta, 250);
   const simulacao = useSimulacaoMeta(metaConsulta);
-  const salvar = useAtualizarResidencia();
+  const [explicacaoAberta, setExplicacaoAberta] = useState(false);
+  // No app: atualiza a sessão e volta. No cadastro inicial: só grava e segue para "Conectar medidor"
+  // (a sessão só recebe a residência no último passo, para não pular para o app antes da hora).
+  const salvarNoApp = useAtualizarResidencia();
+  const salvarNoCadastro = useMutation({ mutationFn: residenciaApi.atualizar });
+  const salvar = cadastroInicial ? salvarNoCadastro : salvarNoApp;
 
   const aoSalvar = () =>
     salvar.mutate({ metaDiariaLitros: meta }, {
-      // No cadastro inicial, salvar a residência na sessão já leva para o app.
-      onSuccess: () => { if (!cadastroInicial) navigation.goBack(); },
+      onSuccess: (atualizada) => {
+        if (cadastroInicial) navigation.navigate('ConectarMedidor', { cadastroInicial: true, residencia: atualizada });
+        else navigation.goBack();
+      },
     });
 
   if (simulacao.isPending) return <Tela><Carregando /></Tela>;
@@ -34,7 +43,7 @@ export function SuaMetaTela({ navigation, route }) {
 
   return (
     <Tela decorada>
-      {cadastroInicial && <Passos atual={3} total={3} />}
+      {cadastroInicial && <Passos atual={2} total={3} />}
       <Cabecalho titulo="Sua meta" voltar={!cadastroInicial} subtitulo="Defina um limite de consumo diário para a sua casa." />
 
       <Cartao>
@@ -71,12 +80,18 @@ export function SuaMetaTela({ navigation, route }) {
         </View>
       </Cartao>
 
-      <Cartao titulo="Com essa meta">
+      <Cartao titulo="Com essa meta, por mês">
         <View style={estilos.linha}>
           <IconeSuave nome="wallet-outline" tamanho={56} redondo />
           <View style={estilos.flex}>
-            <Text style={estilos.legenda}>Conta estimada usando a meta todo dia:</Text>
-            <Text style={estilos.destaque}>{formatarReais(dados.contaEstimadaComMeta)}</Text>
+            <Text style={estilos.legenda}>
+              Conta mensal se a casa usar a meta todo dia ({formatarNumero(meta)} L × {dados.diasNoMes} dias = {formatarLitros(dados.litrosNoMesComMeta)}):
+            </Text>
+            <Text style={estilos.destaque}>{formatarReais(dados.contaEstimadaComMeta)} por mês</Text>
+            <Pressable onPress={() => setExplicacaoAberta(true)} hitSlop={8} accessibilityRole="button" style={estilos.comoCalculamos}>
+              <MaterialCommunityIcons name="information-outline" size={16} color={cores.primariaTexto} />
+              <Text style={estilos.textoComoCalculamos}>Como calculamos?</Text>
+            </Pressable>
           </View>
         </View>
         <View style={estilos.divisor} />
@@ -87,7 +102,7 @@ export function SuaMetaTela({ navigation, route }) {
               <Text style={estilos.legenda}>A economia aparece quando houver leituras deste mês.</Text>
             ) : dados.economiaMensal > 0 ? (
               <>
-                <Text style={estilos.legenda}>Economia estimada:</Text>
+                <Text style={estilos.legenda}>Economia estimada em relação à sua projeção atual:</Text>
                 <Text style={estilos.destaque}>{formatarReais(dados.economiaMensal)} no mês</Text>
               </>
             ) : (
@@ -99,9 +114,16 @@ export function SuaMetaTela({ navigation, route }) {
           </View>
         </View>
       </Cartao>
+      <ExplicacaoConta
+        visivel={explicacaoAberta}
+        aoFechar={() => setExplicacaoAberta(false)}
+        litros={dados.litrosNoMesComMeta}
+        categoria={residencia?.categoriaTarifaria}
+        origemConsumo={`Consumo do mês = meta de ${formatarNumero(dados.metaDiariaLitros)} L por dia × ${dados.diasNoMes} dias.`}
+      />
 
       {salvar.isError && <Text style={estilos.erro}>{salvar.error.message}</Text>}
-      <Botao titulo={cadastroInicial ? 'Salvar meta e começar' : 'Salvar meta'} aoPressionar={aoSalvar} carregando={salvar.isPending} />
+      <Botao titulo={cadastroInicial ? 'Salvar meta e continuar' : 'Salvar meta'} aoPressionar={aoSalvar} carregando={salvar.isPending} />
       <View style={estilos.rodape}>
         <MaterialCommunityIcons name="information-outline" size={16} color={cores.textoTerciario} />
         <Text style={estilos.nota}>Você recebe um alerta quando a casa passa da meta no dia.</Text>
@@ -125,4 +147,6 @@ const estilos = StyleSheet.create({
   erro: { color: cores.perigo, fontSize: 15 },
   rodape: { flexDirection: 'row', gap: 6, alignItems: 'center', justifyContent: 'center' },
   nota: { fontSize: 13, color: cores.textoTerciario },
+  comoCalculamos: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', marginTop: 4 },
+  textoComoCalculamos: { fontSize: 14, fontWeight: '600', color: cores.primariaTexto },
 });

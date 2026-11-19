@@ -15,7 +15,7 @@ export class IngestaoServico {
     this.dispositivoServico = dispositivoServico;
   }
 
-  async receber(dispositivo, payload) {
+  async receber(dispositivo, payload, { silencioso = false } = {}) {
     const dados = daIngestao({ ...payload, device_id: dispositivo.id });
 
     if (dados.confianca !== null && dados.confianca < ambiente.confiancaMinima) {
@@ -42,8 +42,9 @@ export class IngestaoServico {
       leituraM3: dados.leituraM3,
       origem: ORIGEM_POR_TIPO[dispositivo.tipo] ?? 'sensor',
       confianca: dados.confianca,
+      silencioso,
     });
-    await this.dispositivoServico.registrarContato(dispositivo, dados.bateria);
+    await this.dispositivoServico.registrarContato(dispositivo, dados.bateria, { emitir: !silencioso });
     return resultado;
   }
 

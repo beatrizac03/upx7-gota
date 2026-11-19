@@ -41,6 +41,8 @@ Na tela de login há o botão **"Usar conta de demonstração"**.
 
 **Pelo app (sem terminal):** aba **Medidor** → cartão **Simulação do leitor** → escolha o cenário e a velocidade → **Ligar simulação**. A simulação roda no servidor, passa pelo mesmo serviço de ingestão do hardware e desliga sozinha após 30 minutos. Velocidade *Normal* = 15 min simulados a cada 5 s; *Rápida* = 1 h simulada a cada 2 s.
 
+**Conta nova:** o cadastro inicial é *Sua residência → Sua meta → Conectar medidor*. Ao conectar um leitor do tipo "Simulado", a simulação já é ligada e, se a casa ainda não tem leituras, o servidor gera **90 dias de histórico de exemplo** (100 L/pessoa/dia, com alguns picos e um vazamento). O app abre direto no Início com dados.
+
 **Pelo terminal (opcional, testa o caminho HTTP do hardware):**
 
 ```bash

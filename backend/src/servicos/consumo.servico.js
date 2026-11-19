@@ -193,6 +193,8 @@ export class ConsumoServico {
 
     return {
       metaDiariaLitros,
+      diasNoMes: dias,
+      litrosNoMesComMeta: metaDiariaLitros * dias,
       contaEstimadaComMeta: contaComMeta,
       contaProjetadaAtual: contaAtual,
       economiaMensal: economia,

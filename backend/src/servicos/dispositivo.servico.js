@@ -63,11 +63,11 @@ export class DispositivoServico {
     return dispositivo;
   }
 
-  async registrarContato(dispositivo, bateria) {
+  async registrarContato(dispositivo, bateria, { emitir = true } = {}) {
     const ultimoContato = new Date().toISOString();
     await this.dispositivos.registrarContato(dispositivo.id, { bateria, ultimoContato });
     const atualizado = { ...dispositivo, bateria: bateria ?? dispositivo.bateria, ultimoContato };
-    this.barramento.emit(EVENTOS.DISPOSITIVO_ATUALIZADO, { residenciaId: dispositivo.residenciaId, dispositivo: atualizado });
+    if (emitir) this.barramento.emit(EVENTOS.DISPOSITIVO_ATUALIZADO, { residenciaId: dispositivo.residenciaId, dispositivo: atualizado });
     return atualizado;
   }
 }

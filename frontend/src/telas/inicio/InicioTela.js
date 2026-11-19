@@ -61,10 +61,17 @@ export function InicioTela({ navigation }) {
     return (
       <Tela>
         {cabecalho}
-        <EstadoVazio icone="water-outline" titulo="Ainda não há leituras" texto="Conecte o leitor Gota ao hidrômetro ou registre uma leitura manual para começar.">
-          <Botao titulo="Conectar medidor" aoPressionar={() => navigation.navigate('ConectarMedidor')} estilo={estilos.botaoVazio} />
-          <Botao titulo="Registrar leitura manual" variante="texto" aoPressionar={() => navigation.navigate('RegistrarLeitura')} />
-        </EstadoVazio>
+        {r.medidor ? (
+          // Medidor já conectado: só falta a primeira leitura chegar (o tempo real atualiza a tela)
+          <EstadoVazio icone="time-outline" titulo="Medidor conectado" texto="Aguardando a primeira leitura do seu medidor. Ela aparece aqui sozinha.">
+            <Botao titulo="Ver meu medidor" variante="secundario" aoPressionar={() => navigation.navigate('Medidor')} estilo={estilos.botaoVazio} />
+          </EstadoVazio>
+        ) : (
+          <EstadoVazio icone="water-outline" titulo="Ainda não há leituras" texto="Conecte o leitor Gota ao hidrômetro ou registre uma leitura manual para começar.">
+            <Botao titulo="Conectar medidor" aoPressionar={() => navigation.navigate('ConectarMedidor')} estilo={estilos.botaoVazio} />
+            <Botao titulo="Registrar leitura manual" variante="texto" aoPressionar={() => navigation.navigate('RegistrarLeitura')} />
+          </EstadoVazio>
+        )}
       </Tela>
     );
   }

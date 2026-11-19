@@ -8,6 +8,7 @@ import { useSessao } from '../../contexto/SessaoContexto';
 import { useAtualizarAoPuxar } from '../../hooks/useAtualizarAoPuxar';
 import { formatarDataHora, formatarLitros, formatarRelativo } from '../../utils/formatar';
 import { cores, espaco, raio } from '../../tema';
+import { juntarPaginasSemRepetir } from '../../utils/listas';
 import { RotuloStatus } from './RotuloStatus';
 import { PainelSimulacao } from './PainelSimulacao';
 
@@ -39,7 +40,7 @@ export function MeuMedidorTela({ navigation }) {
   const resumo = useResumo();
   const leituras = useLeituras(FILTRO_LEITURAS);
 
-  const lista = useMemo(() => leituras.data?.pages.flatMap((p) => p.dados) ?? [], [leituras.data]);
+  const lista = useMemo(() => juntarPaginasSemRepetir(leituras.data?.pages), [leituras.data]);
   const medidor = dispositivos.data?.dados?.[0];
   const ultima = resumo.data?.ultimaLeitura;
 

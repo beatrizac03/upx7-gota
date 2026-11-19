@@ -23,7 +23,7 @@ export class LeituraServico {
    * 3. corrige o consumo da leitura seguinte (leituras que chegam fora de ordem);
    * 4. avalia as regras de alerta.
    */
-  async registrar({ residencia, dispositivoId = null, lidoEm, leituraM3, origem, confianca = null }) {
+  async registrar({ residencia, dispositivoId = null, lidoEm, leituraM3, origem, confianca = null, silencioso = false }) {
     const resultado = await this.repositorios.transacao(async () => {
       if (dispositivoId) {
         const existente = await this.leituras.buscarPorDispositivoEInstante(dispositivoId, lidoEm);
@@ -56,7 +56,8 @@ export class LeituraServico {
       return { leitura, duplicada: false, alertas };
     });
 
-    if (!resultado.duplicada) {
+    // silencioso: geração de histórico, sem avisos em tempo real para o app
+    if (!resultado.duplicada && !silencioso) {
       this.barramento.emit(EVENTOS.LEITURA_REGISTRADA, { residenciaId: residencia.id, leitura: resultado.leitura });
       for (const alerta of resultado.alertas) {
         this.barramento.emit(EVENTOS.ALERTA_CRIADO, { residenciaId: residencia.id, alerta });

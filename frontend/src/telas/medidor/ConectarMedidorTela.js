@@ -4,8 +4,10 @@ import { Ionicons } from '@expo/vector-icons';
 import {
   AvisoInfo, Botao, Cabecalho, CampoTexto, Cartao, IconeSuave, OpcoesSegmentadas, Passos, Tela,
 } from '../../componentes';
-import { residenciaApi } from '../../api/endpoints';
-import { useParearDispositivo } from '../../consultas';
+import { useQueryClient } from '@tanstack/react-query';
+import { residenciaApi, simulacaoApi } from '../../api/endpoints';
+import { chaves, useParearDispositivo } from '../../consultas';
+import { useSessao } from '../../contexto/SessaoContexto';
 import { cores, espaco, raio } from '../../tema';
 
 // No protótipo a busca de redes é simulada; no leitor real ela viria do ESP32 pela rede "Gota-Setup".
@@ -24,15 +26,19 @@ const MENSAGENS_CONEXAO = [
   'Enviando a rede Wi-Fi para o leitor…',
   'Leitor conectando à internet…',
   'Registrando o leitor na sua conta…',
+  'Ligando o leitor e preparando seu histórico…',
 ];
+
+const PASSOS_ANIMADOS = 3; // as 3 primeiras mensagens são só visuais
 
 /**
  * Pareamento do leitor Gota: rede "Gota-Setup" → Wi-Fi de casa → registro.
- * As etapas de rádio são simuladas; o registro do dispositivo é real (POST /dispositivos)
- * e devolve a chave usada pelo leitor/simulador para enviar leituras.
+ * As etapas de rádio são simuladas; o registro do dispositivo é real (POST /dispositivos).
+ * Leitor simulado: a simulação já é ligada sozinha e o usuário vai direto para o Início.
+ * Leitor com câmera: mostra os dados técnicos (id + chave) que vão para o firmware.
  */
 export function ConectarMedidorTela({ navigation, route }) {
-  const { cadastroInicial = false, residencia } = route.params ?? {};
+  const { cadastroInicial = false } = route.params ?? {};
   const [etapa, setEtapa] = useState('inicio');
   const [rede, setRede] = useState(null);
   const [senhaWifi, setSenhaWifi] = useState('');
@@ -40,32 +46,48 @@ export function ConectarMedidorTela({ navigation, route }) {
   const [mensagem, setMensagem] = useState(0);
   const [pulando, setPulando] = useState(false);
   const [mostrarTecnico, setMostrarTecnico] = useState(false);
+  const [erro, setErro] = useState('');
   const parear = useParearDispositivo();
+  const { definirResidencia } = useSessao();
+  const clienteConsultas = useQueryClient();
 
   useEffect(() => {
     if (etapa !== 'conectando') return undefined;
     let cancelado = false;
-    const temporizadores = MENSAGENS_CONEXAO.map((_, i) => setTimeout(() => !cancelado && setMensagem(i), i * 900));
-    const registro = setTimeout(() => {
-      parear.mutate(
-        { nome: 'Leitor Gota', tipo },
-        { onSuccess: () => setEtapa('pronto'), onError: () => setEtapa('wifi') },
-      );
-    }, MENSAGENS_CONEXAO.length * 900);
+    const temporizadores = Array.from({ length: PASSOS_ANIMADOS }, (_, i) => setTimeout(() => !cancelado && setMensagem(i), i * 900));
+    const registro = setTimeout(async () => {
+      try {
+        const dispositivo = await parear.mutateAsync({ nome: 'Leitor Gota', tipo });
+        if (dispositivo.tipo !== 'simulado') {
+          if (!cancelado) setEtapa('pronto');
+          return;
+        }
+        // Leitor simulado já começa ligado (sem terminal)
+        setMensagem(PASSOS_ANIMADOS);
+        const estado = await simulacaoApi.iniciar({ cenario: 'normal', velocidade: 'normal' });
+        clienteConsultas.setQueryData(chaves.simulacao, estado);
+        for (const chave of [chaves.consumo, ['leituras'], ['alertas'], ['dicas']]) clienteConsultas.invalidateQueries({ queryKey: chave });
+        if (!cancelado) await concluir();
+      } catch (e) {
+        if (!cancelado) { setErro(e.message); setEtapa('wifi'); }
+      }
+    }, PASSOS_ANIMADOS * 900);
     return () => { cancelado = true; temporizadores.forEach(clearTimeout); clearTimeout(registro); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [etapa]);
 
-  const concluir = () => {
-    if (cadastroInicial) navigation.navigate('SuaMeta', { cadastroInicial: true, residencia });
-    else navigation.goBack();
-  };
+  /** Fim do fluxo: abre o Início. No cadastro inicial, salvar a residência na sessão já troca para o app. */
+  async function concluir() {
+    if (cadastroInicial) definirResidencia(await residenciaApi.obter());
+    else navigation.navigate('Abas', { screen: 'Inicio' });
+  }
 
   async function pular() {
     setPulando(true);
     try {
-      const atualizada = await residenciaApi.atualizar({ possuiHidrometroIndividual: false });
-      navigation.navigate('SuaMeta', { cadastroInicial: true, residencia: atualizada });
+      definirResidencia(await residenciaApi.atualizar({ possuiHidrometroIndividual: false }));
+    } catch (e) {
+      setErro(e.message);
     } finally {
       setPulando(false);
     }
@@ -73,7 +95,7 @@ export function ConectarMedidorTela({ navigation, route }) {
 
   return (
     <Tela formulario decorada>
-      {cadastroInicial && <Passos atual={2} total={3} />}
+      {cadastroInicial && <Passos atual={3} total={3} />}
       <Cabecalho titulo="Conectar medidor" voltar={etapa === 'inicio'} subtitulo={etapa === 'inicio' ? 'O leitor Gota lê o hidrômetro sozinho e envia o consumo pela internet.' : undefined} />
 
       {etapa === 'inicio' && (
@@ -141,7 +163,7 @@ export function ConectarMedidorTela({ navigation, route }) {
             <Text style={estilos.rotulo}>Tipo de leitor</Text>
             <OpcoesSegmentadas opcoes={TIPOS_LEITOR} valor={tipo} aoMudar={setTipo} compacto />
           </View>
-          {parear.isError && <Text style={estilos.erro}>{parear.error.message}</Text>}
+          {erro ? <Text style={estilos.erro}>{erro}</Text> : null}
           <AvisoInfo texto="Se o Wi-Fi não alcançar o hidrômetro, use um repetidor perto dele. O leitor guarda as leituras e envia quando a conexão voltar." />
           <Botao titulo="Conectar" aoPressionar={() => setEtapa('conectando')} desabilitado={!rede || senhaWifi.length < 8} />
           {rede && senhaWifi.length > 0 && senhaWifi.length < 8 && <Text style={estilos.legenda}>Senhas de Wi-Fi têm pelo menos 8 caracteres.</Text>}
